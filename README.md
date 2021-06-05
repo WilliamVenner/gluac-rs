@@ -13,7 +13,7 @@ Compile Garry's Mod Lua into bytecode using Rust!
 Add to your [`Cargo.toml`](https://doc.rust-lang.org/cargo/reference/manifest.html) file:
 ```toml
 [dependencies]
-gluac_rs = "*"
+gluac-rs = "*"
 ```
 
 #### [`parking_lot`](https://crates.io/crates/parking_lot) support
@@ -22,7 +22,7 @@ This crate supports the [`parking_lot`](https://crates.io/crates/parking_lot) Mu
 
 ```toml
 [dependencies]
-gluac_rs = { version = "*", features = ["parking_lot"] }
+gluac-rs = { version = "*", features = ["parking_lot"] }
 ```
 
 ## Example
