@@ -22,4 +22,5 @@ pub use api::*;
 
 mod compiler;
 
+#[cfg(test)]
 mod tests;

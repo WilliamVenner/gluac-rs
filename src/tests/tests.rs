@@ -7,19 +7,16 @@ fn verify_hello_world_bytecode(bytecode: &[u8]) {
 	assert_eq!(bytecode, [27, 76, 74, 1, 2, 43, 2, 0, 2, 0, 2, 0, 4, 52, 0, 0, 0, 37, 1, 1, 0, 62, 0, 2, 1, 71, 0, 1, 0, 18, 72, 101, 108, 108, 111, 44, 32, 119, 111, 114, 108, 100, 33, 10, 112, 114, 105, 110, 116, 0]);
 }
 
-#[cfg(test)]
 fn check_stack(compiler: crate::compiler::BytecodeCompiler) {
 	assert_eq!(compiler.stack_size(), 3);
 	assert_eq!(compiler.get_type(compiler.stack_size()), "function");
 }
 
-#[cfg(test)]
 fn compile_hello_world_string(compiler: &crate::compiler::BytecodeCompiler) {
 	let bytecode = compiler.compile_string(lua_string!(r#"print("Hello, world!")"#), true).unwrap();
 	verify_hello_world_bytecode(&bytecode);
 }
 
-#[cfg(test)]
 fn compile_syntax_error(compiler: &crate::compiler::BytecodeCompiler) {
 	let result = compiler.compile_string(lua_string!(r#"Invalid Lua code"#), true);
 	assert!(match result {
@@ -28,7 +25,6 @@ fn compile_syntax_error(compiler: &crate::compiler::BytecodeCompiler) {
 	});
 }
 
-#[cfg(test)]
 fn compile_invalid_file(compiler: &crate::compiler::BytecodeCompiler) {
 	let result = compiler.compile_file(lua_string!("this file does not exist"), true);
 	assert!(match result {
@@ -37,7 +33,6 @@ fn compile_invalid_file(compiler: &crate::compiler::BytecodeCompiler) {
 	});
 }
 
-#[cfg(test)]
 fn compile_hello_world_file(compiler: &crate::compiler::BytecodeCompiler) {
 	let bytecode = compiler.compile_file(lua_string!(std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/tests/hello_world.lua").to_string_lossy().to_string()), true).unwrap();
 	verify_hello_world_bytecode(&bytecode);
