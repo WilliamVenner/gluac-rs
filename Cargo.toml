@@ -1,0 +1,16 @@
+[package]
+name = "gluac-rs"
+version = "0.1.0"
+authors = ["William Venner <william@venner.io>"]
+edition = "2018"
+repository = "https://github.com/WilliamVenner/gluac-rs"
+license = "MIT"
+description = "Rust Crate for compiling Garry's Mod Lua into bytecode"
+readme = "README.md"
+keywords = ["gmod", "glua", "gluac", "lua", "luajit"]
+categories = ["os", "hardware-support", "filesystem", "accessibility"]
+
+[dependencies]
+libloading = "0.7.0"
+lazy_static = "1.4.0"
+parking_lot = { version = "0.11", optional = true }
