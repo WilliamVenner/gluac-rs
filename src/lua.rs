@@ -16,7 +16,7 @@ pub const LUA_ERRFILE: LuaInt = 6;
 
 impl LuaError {
 	fn get_error_message(lua_state: LuaState) -> Option<String> {
-		unsafe { lua_state.get_string(-1) }
+		unsafe { lua_state.get_string(-1).map(|str| str.into_owned()) }
 	}
 
     pub(crate) fn from_lua_state(lua_state: LuaState, lua_int_error_code: LuaInt) -> Self {
@@ -204,15 +204,13 @@ impl LuaState {
 			return None;
 		}
 
-		let mut bytes = std::slice::from_raw_parts(ptr as *const u8, len).to_vec();
-		bytes.pop(); // Pop off the NUL byte
-
+		let bytes = std::slice::from_raw_parts(ptr as *const u8, len).to_vec();
 		self.remove(index); // Pop the string off the stack
 
 		Some(bytes)
 	}
 
-	pub(crate) unsafe fn get_string(&self, index: LuaInt) -> Option<String> {
+	pub(crate) unsafe fn get_string(&self, index: LuaInt) -> Option<std::borrow::Cow<'_, str>> {
 		let mut len: usize = 0;
 		let ptr = (LUA_SHARED.lua_tolstring)(*self, index, &mut len);
 
@@ -220,12 +218,10 @@ impl LuaState {
 			return None;
 		}
 
-		let mut bytes = std::slice::from_raw_parts(ptr as *const u8, len).to_vec();
-		bytes.pop(); // Pop off the NUL byte
-
+		let bytes = std::slice::from_raw_parts(ptr as *const u8, len);
 		self.remove(index); // Pop the string off the stack
 
-		Some(String::from_utf8_lossy(&bytes).into_owned())
+		Some(String::from_utf8_lossy(bytes))
 	}
 
 	pub(crate) unsafe fn load_string(&self, src: LuaString) -> Result<(), LuaError> {
