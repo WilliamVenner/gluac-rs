@@ -10,6 +10,23 @@ Compile Garry's Mod Lua into bytecode using Rust!
 
 ## Usage
 
+Add to your [`Cargo.toml`](https://doc.rust-lang.org/cargo/reference/manifest.html) file:
+```toml
+[dependencies]
+gluac_rs = "*"
+```
+
+#### [`parking_lot`](https://crates.io/crates/parking_lot) support
+
+This crate supports the [`parking_lot`](https://crates.io/crates/parking_lot) Mutex, just add the `parking_lot` feature flag like so:
+
+```toml
+[dependencies]
+gluac_rs = { version = "*", features = ["parking_lot"] }
+```
+
+## Example
+
 ```rust
 // A utility macro for user-friendly generation of Lua-compatible CStrings.
 use gluac::lua_string;
