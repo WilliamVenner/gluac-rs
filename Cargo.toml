@@ -8,7 +8,7 @@ license = "MIT"
 description = "Rust Crate for compiling Garry's Mod Lua into bytecode"
 readme = "README.md"
 keywords = ["gmod", "glua", "gluac", "lua", "luajit"]
-categories = ["os", "hardware-support", "filesystem", "accessibility"]
+categories = ["compilers", "api-bindings", "game-development", "cryptography"]
 
 [dependencies]
 libloading = "0.7.0"
