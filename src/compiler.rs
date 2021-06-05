@@ -1,5 +1,6 @@
 use crate::{Bytecode, LuaError, Mutex, MutexGuard, lua::{self, LUA_GLOBALSINDEX, LuaString}, lua_string};
 
+#[derive(Debug)]
 pub struct BytecodeCompiler(Mutex<lua::LuaState>);
 impl BytecodeCompiler {
 	pub(crate) unsafe fn new() -> Result<Self, LuaError> {
@@ -8,6 +9,8 @@ impl BytecodeCompiler {
 		// Push string.dump onto the stack
 		lua_state.get_field(LUA_GLOBALSINDEX, lua_string!("string"));
 		lua_state.get_field(-1, lua_string!("dump"));
+
+		lua_state.push_value(-1); // Copy the string.dump reference onto the stack again (saves us getting it from _G every time)
 
 		Ok(Self(Mutex::new(lua_state)))
 	}
@@ -42,21 +45,19 @@ impl BytecodeCompiler {
 		}
 	}
 
-	#[inline]
-	unsafe fn precompile(&self, lua_state: lua::LuaState) {
-		lua_state.push_value(-1); // Copy the string.dump reference onto the stack again (saves us getting it from _G every time)
-	}
-
 	unsafe fn compile(&self, lua_state: lua::LuaState, strip_debug: bool) -> Result<Bytecode, LuaError> {
 		lua_state.push_boolean(strip_debug); // Push strip_debug argument onto the stack
+
 		let lua_error_code = lua_state.pcall(2, 1, 0); // Call string.dump
-		if lua_error_code == 0 {
-			let mut bytecode = lua_state.get_binary_string(-1).unwrap().to_vec();
-			bytecode.pop(); // Pop the final NUL terminator off the string
-			Ok(bytecode)
+		let result = if lua_error_code == 0 {
+			Ok(lua_state.get_binary_string(-1).unwrap())
 		} else {
 			Err(LuaError::from_lua_state(lua_state, lua_error_code))
-		}
+		};
+
+		lua_state.push_value(-1); // Copy the string.dump reference onto the stack again
+
+		result
 	}
 
 	/// Loads a string of Lua source code into the Lua state and compiles it to bytecode.
@@ -65,7 +66,6 @@ impl BytecodeCompiler {
 	pub fn compile_string(&self, src: LuaString, strip_debug: bool) -> Result<Bytecode, LuaError> {
 		let lua_state = self.lock()?;
 		unsafe {
-			self.precompile(*lua_state);
 			lua_state.load_string(src)?;
 			self.compile(*lua_state, strip_debug)
 		}
@@ -77,10 +77,21 @@ impl BytecodeCompiler {
 	pub fn compile_file(&self, path: LuaString, strip_debug: bool) -> Result<Bytecode, LuaError> {
 		let lua_state = self.lock()?;
 		unsafe {
-			self.precompile(*lua_state);
 			lua_state.load_file(path)?;
 			self.compile(*lua_state, strip_debug)
 		}
+	}
+
+	#[cfg(test)]
+	pub(crate) fn stack_size(&self) -> crate::lua::LuaInt {
+		let lua_state = self.lock().unwrap();
+		unsafe { lua_state.get_top() }
+	}
+
+	#[cfg(test)]
+	pub(crate) fn get_type(&self, index: crate::lua::LuaInt) -> String {
+		let lua_state = self.lock().unwrap();
+		unsafe { lua_state.get_type(index).into_owned() }
 	}
 }
 impl std::ops::Drop for BytecodeCompiler {

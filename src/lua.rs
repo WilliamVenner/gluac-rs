@@ -16,7 +16,7 @@ pub const LUA_ERRFILE: LuaInt = 6;
 
 impl LuaError {
 	fn get_error_message(lua_state: LuaState) -> Option<String> {
-		unsafe { lua_state.get_string(-1).map(|str| str.into_owned()) }
+		unsafe { lua_state.get_string(-1) }
 	}
 
     pub(crate) fn from_lua_state(lua_state: LuaState, lua_int_error_code: LuaInt) -> Self {
@@ -51,7 +51,17 @@ struct LuaShared {
 	lua_pushboolean: Symbol<'static, unsafe extern "C" fn(state: LuaState, bool: LuaInt)>,
 	lua_tolstring: Symbol<'static, unsafe extern "C" fn(state: LuaState, index: LuaInt, out_size: *mut LuaSize) -> LuaString>,
 	lua_pcall: Symbol<'static, unsafe extern "C" fn(state: LuaState, nargs: LuaInt, nresults: LuaInt, errfunc: LuaInt) -> LuaInt>,
+	lua_remove: Symbol<'static, unsafe extern "C" fn(state: LuaState, index: LuaInt)>,
 	lua_close: Symbol<'static, unsafe extern "C" fn(state: LuaState)>,
+
+	#[cfg(test)]
+	lua_gettop: Symbol<'static, unsafe extern "C" fn(state: LuaState) -> LuaInt>,
+
+	#[cfg(test)]
+	lua_type: Symbol<'static, unsafe extern "C" fn(state: LuaState, index: LuaInt) -> LuaInt>,
+
+	#[cfg(test)]
+	lua_typename: Symbol<'static, unsafe extern "C" fn(state: LuaState, lua_type_id: LuaInt) -> LuaString>,
 }
 impl LuaShared {
 	fn import() -> Self {
@@ -75,7 +85,17 @@ impl LuaShared {
 				lua_pushboolean: find_symbol!("lua_pushboolean"),
 				lua_tolstring: find_symbol!("lua_tolstring"),
 				lua_pcall: find_symbol!("lua_pcall"),
+				lua_remove: find_symbol!("lua_remove"),
 				lua_close: find_symbol!("lua_close"),
+
+				#[cfg(test)]
+				lua_gettop: find_symbol!("lua_gettop"),
+
+				#[cfg(test)]
+				lua_type: find_symbol!("lua_type"),
+
+				#[cfg(test)]
+				lua_typename: find_symbol!("lua_typename"),
 			}
 		}
 	}
@@ -124,7 +144,7 @@ impl LuaShared {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct LuaState(*const std::ffi::c_void);
 unsafe impl Send for LuaState {}
 impl LuaState {
@@ -136,6 +156,24 @@ impl LuaState {
 		} else {
 			Ok(lua)
 		}
+	}
+
+	#[inline]
+	#[cfg(test)]
+	pub(crate) unsafe fn get_top(&self) -> LuaInt {
+		(LUA_SHARED.lua_gettop)(*self)
+	}
+
+	#[cfg(test)]
+	pub(crate) unsafe fn get_type(&self, index: LuaInt) -> std::borrow::Cow<'_, str> {
+		let lua_type = (LUA_SHARED.lua_type)(*self, index);
+		let lua_type_str_ptr = (LUA_SHARED.lua_typename)(*self, lua_type);
+		let lua_type_str = std::ffi::CStr::from_ptr(lua_type_str_ptr);
+		lua_type_str.to_string_lossy()
+	}
+
+	pub(crate) unsafe fn remove(&self, index: LuaInt) {
+		(LUA_SHARED.lua_remove)(*self, index)
 	}
 
 	#[inline]
@@ -158,7 +196,7 @@ impl LuaState {
 		(LUA_SHARED.lua_pcall)(*self, nargs, nresults, errfunc)
 	}
 
-	pub(crate) unsafe fn get_binary_string(&self, index: LuaInt) -> Option<&[u8]> {
+	pub(crate) unsafe fn get_binary_string(&self, index: LuaInt) -> Option<Vec<u8>> {
 		let mut len: usize = 0;
 		let ptr = (LUA_SHARED.lua_tolstring)(*self, index, &mut len);
 
@@ -166,10 +204,15 @@ impl LuaState {
 			return None;
 		}
 
-		Some(std::slice::from_raw_parts(ptr as *const u8, len))
+		let mut bytes = std::slice::from_raw_parts(ptr as *const u8, len).to_vec();
+		bytes.pop(); // Pop off the NUL byte
+
+		self.remove(index); // Pop the string off the stack
+
+		Some(bytes)
 	}
 
-	pub(crate) unsafe fn get_string(&self, index: LuaInt) -> Option<std::borrow::Cow<'_, str>> {
+	pub(crate) unsafe fn get_string(&self, index: LuaInt) -> Option<String> {
 		let mut len: usize = 0;
 		let ptr = (LUA_SHARED.lua_tolstring)(*self, index, &mut len);
 
@@ -177,7 +220,12 @@ impl LuaState {
 			return None;
 		}
 
-		Some(String::from_utf8_lossy(std::slice::from_raw_parts(ptr as *const u8, len)))
+		let mut bytes = std::slice::from_raw_parts(ptr as *const u8, len).to_vec();
+		bytes.pop(); // Pop off the NUL byte
+
+		self.remove(index); // Pop the string off the stack
+
+		Some(String::from_utf8_lossy(&bytes).into_owned())
 	}
 
 	pub(crate) unsafe fn load_string(&self, src: LuaString) -> Result<(), LuaError> {
