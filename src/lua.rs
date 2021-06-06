@@ -19,9 +19,9 @@ impl LuaError {
 		unsafe { lua_state.get_string(-1).map(|str| str.into_owned()) }
 	}
 
-    pub(crate) fn from_lua_state(lua_state: LuaState, lua_int_error_code: LuaInt) -> Self {
+	pub(crate) fn from_lua_state(lua_state: LuaState, lua_int_error_code: LuaInt) -> Self {
 		use LuaError::*;
-        match lua_int_error_code {
+		match lua_int_error_code {
 			LUA_ERRMEM => MemoryAllocationError,
 			LUA_ERRERR => ErrorHandlerError,
 			LUA_ERRSYNTAX | LUA_ERRRUN | LUA_ERRFILE => {
@@ -30,12 +30,12 @@ impl LuaError {
 					LUA_ERRSYNTAX => SyntaxError(msg),
 					LUA_ERRRUN => RuntimeError(msg),
 					LUA_ERRFILE => FileError(msg),
-					_ => unreachable!()
+					_ => unreachable!(),
 				}
-			},
-			_ => Unknown(lua_int_error_code)
+			}
+			_ => Unknown(lua_int_error_code),
 		}
-    }
+	}
 }
 
 lazy_static::lazy_static! {
@@ -103,7 +103,7 @@ impl LuaShared {
 	unsafe fn find_symbol<T>(library: &'static Library, name: &[u8]) -> Symbol<'static, T> {
 		match library.get(name) {
 			Ok(symbol) => symbol,
-			Err(err) => panic!("Failed to find symbol \"{}\"\n{:#?}", String::from_utf8_lossy(name), err)
+			Err(err) => panic!("Failed to find symbol \"{}\"\n{:#?}", String::from_utf8_lossy(name), err),
 		}
 	}
 
@@ -248,9 +248,9 @@ impl LuaState {
 	}
 }
 impl std::ops::Deref for LuaState {
-    type Target = *const std::ffi::c_void;
+	type Target = *const std::ffi::c_void;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
 }

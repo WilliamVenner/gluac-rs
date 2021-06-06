@@ -10,7 +10,7 @@ fn main() {
 				.long("strip")
 				.short("s")
 				.help("Strips debug information from the compiled bytecode")
-				.multiple(false)
+				.multiple(false),
 		)
 		.arg(
 			clap::Arg::with_name("file")
@@ -18,14 +18,14 @@ fn main() {
 				.help("Input file path")
 				.conflicts_with("input")
 				.required(true)
-				.multiple(false)
+				.multiple(false),
 		)
 		.arg(
 			clap::Arg::with_name("input")
 				.help("The input source code")
 				.conflicts_with("file")
 				.required(true)
-				.raw(true)
+				.raw(true),
 		)
 		.get_matches();
 
@@ -33,11 +33,18 @@ fn main() {
 
 	let compiler = gluac_rs::compiler().expect("Failed to initialize bytecode compiler");
 	let bytecode = if let Some(src) = matches.args.get("input") {
-		let src = src.vals.iter().map(|os_str| os_str.to_string_lossy().into_owned().into_bytes()).flatten().collect::<Vec<u8>>();
+		let src = src
+			.vals
+			.iter()
+			.map(|os_str| os_str.to_string_lossy().into_owned().into_bytes())
+			.flatten()
+			.collect::<Vec<u8>>();
 		let src = std::ffi::CString::new(src).expect("Expected input source to not contain any NUL bytes!");
 		compiler.compile_string(src.as_ptr(), strip_debug).unwrap()
 	} else if let Some(path) = matches.args.get("file") {
-		compiler.compile_file(gluac_rs::lua_string!(path.vals[0].to_string_lossy().into_owned()), strip_debug).unwrap()
+		compiler
+			.compile_file(gluac_rs::lua_string!(path.vals[0].to_string_lossy().into_owned()), strip_debug)
+			.unwrap()
 	} else {
 		unreachable!();
 	};

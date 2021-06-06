@@ -1,4 +1,7 @@
-use crate::{Bytecode, LuaError, Mutex, MutexGuard, lua::{self, LUA_GLOBALSINDEX, LuaString}, lua_string};
+use crate::{
+	lua::{self, LuaString, LUA_GLOBALSINDEX},
+	lua_string, Bytecode, LuaError, Mutex, MutexGuard,
+};
 
 #[derive(Debug)]
 pub struct BytecodeCompiler(Mutex<lua::LuaState>);
@@ -41,7 +44,7 @@ impl BytecodeCompiler {
 	pub fn is_locked(&self) -> bool {
 		match self.0.try_lock() {
 			Ok(_) => false,
-			Err(err) => matches!(err, std::sync::TryLockError::WouldBlock)
+			Err(err) => matches!(err, std::sync::TryLockError::WouldBlock),
 		}
 	}
 
@@ -95,11 +98,13 @@ impl BytecodeCompiler {
 	}
 }
 impl std::ops::Drop for BytecodeCompiler {
-    fn drop(&mut self) {
-        if let Ok(lua_state) = self.lock() {
+	fn drop(&mut self) {
+		if let Ok(lua_state) = self.lock() {
 			if !(*lua_state).is_null() {
-				unsafe { lua_state.close(); }
+				unsafe {
+					lua_state.close();
+				}
 			}
 		}
-    }
+	}
 }
