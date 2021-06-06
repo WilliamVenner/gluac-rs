@@ -10,7 +10,19 @@ readme = "README.md"
 keywords = ["gmod", "glua", "gluac", "lua", "luajit"]
 categories = ["compilers", "api-bindings", "game-development", "cryptography"]
 
+[[bin]]
+name = "gluac"
+test = false
+bench = false
+required-features = ["parking_lot"]
+
 [dependencies]
 libloading = "0.7.0"
 lazy_static = "1.4.0"
 parking_lot = { version = "0.11", optional = true }
+clap = "2.33.3"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
