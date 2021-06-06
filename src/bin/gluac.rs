@@ -16,6 +16,7 @@ fn main() {
 			clap::Arg::with_name("file")
 				.short("f")
 				.help("Input file path")
+				.takes_value(true)
 				.conflicts_with("input")
 				.required(true)
 				.multiple(false),
