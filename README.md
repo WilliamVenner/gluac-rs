@@ -67,11 +67,12 @@ Take care to use the correct dependencies for your target branch of the game (32
 
 ### Linux
 
-You may need to add the directory to the `LD_LIBRARY_PATH` environment variable.
+You may also need to add the directory to the `LD_LIBRARY_PATH` environment variable.
 
 * `lua_shared.so`
 * `libtier0.so`
 * `libvstdlib.so`
+* `libsteam_api.so` (32-bit only)
 
 I think older Garry's Mod versions have `_srv` suffixes in the file names for these libraries. These are also supported.
 
