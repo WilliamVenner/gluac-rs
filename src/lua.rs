@@ -107,20 +107,38 @@ impl LuaShared {
 		}
 	}
 
+	#[cfg(target_os = "windows")]
 	unsafe fn find_library() -> Library {
-		#[cfg(target_os = "windows")]
-		let result = Library::new("lua_shared.dll");
-
-		#[cfg(not(target_os = "windows"))]
-		let result = Library::new("lua_shared_srv.so").or_else(|_| Library::new("lua_shared.so"));
-
-		match result {
+		match Library::new("lua_shared.dll") {
 			Ok(library) => library,
 			Err(error) => {
-				#[cfg(target_os = "windows")]
 				eprintln!("Failed to load lua_shared.dll, tier0.dll or vstdlib.dll!");
 
-				#[cfg(not(target_os = "windows"))]
+				#[cfg(target_pointer_width = "32")]
+				eprintln!("Make sure you are using the 32-bit module binaries from the 32-bit branch of Garry's Mod.");
+
+				#[cfg(target_pointer_width = "64")]
+				eprintln!("Make sure you are using the 64-bit module binaries from the 64-bit branch of Garry's Mod.");
+
+				eprintln!("The binaries must be placed in the same directory as the executable, or be in the system's PATH.");
+
+				eprintln!("Executable path: {:?}", std::env::current_exe().ok());
+
+				panic!("{:#?}", error);
+			}
+		}
+	}
+
+	#[cfg(not(target_os = "windows"))]
+	unsafe fn find_library() -> Library {
+		let result_srv = Library::new("lua_shared_srv.so");
+		if let Ok(result_srv) = result_srv {
+			return result_srv;
+		}
+
+		match Library::new("lua_shared.so") {
+			Ok(library) => library,
+			Err(error) => {
 				eprintln!("Failed to load lua_shared_srv.so/lua_shared.so, libtier0_srv.so/libtier0.so or libvstdlib_srv.so/libvstdlib.so!");
 
 				#[cfg(target_pointer_width = "32")]
@@ -129,15 +147,12 @@ impl LuaShared {
 				#[cfg(target_pointer_width = "64")]
 				eprintln!("Make sure you are using the 64-bit module binaries from the 64-bit branch of Garry's Mod.");
 
-				#[cfg(not(target_os = "windows"))]
 				eprintln!("The binaries must be placed in the same directory as the executable, or be in the system's PATH.");
-
-				#[cfg(not(target_os = "linux"))]
 				eprintln!("You may need to add the directory of the current executable to the LD_LIBRARY_PATH environment variable.");
 
 				eprintln!("Executable path: {:?}", std::env::current_exe().ok());
 
-				panic!("{:#?}", error);
+				panic!("{:#?}\n{:#?}", error, result_srv.unwrap_err());
 			}
 		}
 	}
