@@ -158,7 +158,7 @@ impl LuaShared {
 	}
 }
 
-#[repr(C)]
+#[repr(transparent)]
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct LuaState(*const std::ffi::c_void);
 unsafe impl Send for LuaState {}
@@ -166,7 +166,7 @@ impl LuaState {
 	pub(crate) unsafe fn new() -> Result<Self, LuaError> {
 		let lua = (LUA_SHARED.lual_newstate)();
 		(LUA_SHARED.lual_openlibs)(lua);
-		if lua.0.is_null() {
+		if lua.is_null() {
 			Err(LuaError::MemoryAllocationError)
 		} else {
 			Ok(lua)
