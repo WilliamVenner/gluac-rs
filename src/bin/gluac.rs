@@ -28,6 +28,14 @@ fn main() {
 				.required(true)
 				.raw(true),
 		)
+		.arg(
+			clap::Arg::with_name("output")
+				.short("o")
+				.help("Output file path")
+				.takes_value(true)
+				.multiple(false)
+				.required(false)
+		)
 		.get_matches();
 
 	let strip_debug = matches.args.get("strip").is_some();
@@ -50,7 +58,11 @@ fn main() {
 		unreachable!();
 	};
 
-	let mut stdout = std::io::stdout();
-	stdout.write_all(&bytecode).expect("Failed to write to stdout");
-	stdout.flush().expect("Failed to write to stdout");
+	if let Some(output) = matches.args.get("output") {
+		std::fs::write(output.vals[0].as_os_str(), &bytecode).expect("Failed to write to output file");
+	} else {
+		let mut stdout = std::io::stdout();
+		stdout.write_all(&bytecode).expect("Failed to write to stdout");
+		stdout.flush().expect("Failed to write to stdout");
+	}
 }
